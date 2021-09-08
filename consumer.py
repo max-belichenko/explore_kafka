@@ -18,12 +18,16 @@
 #
 # Example high-level Kafka 0.9 balanced Consumer
 #
-from confluent_kafka import Consumer, KafkaException
+import pickle
 import sys
 import getopt
 import json
 import logging
+
+from confluent_kafka import Consumer, KafkaException
 from pprint import pformat
+
+from schemas import cmdb
 
 
 def stats_cb(stats_json_str):
@@ -49,9 +53,12 @@ if __name__ == '__main__':
     broker = argv[0]
     group = argv[1]
     topics = argv[2:]
+
     # Consumer configuration
     # See https://github.com/edenhill/librdkafka/blob/master/CONFIGURATION.md
-    conf = {'bootstrap.servers': broker, 'group.id': group, 'session.timeout.ms': 6000,
+    conf = {'bootstrap.servers': broker,
+            'group.id': group,
+            'session.timeout.ms': 6000,
             'auto.offset.reset': 'earliest'}
 
     # Check to see if -T option exists
@@ -80,32 +87,34 @@ if __name__ == '__main__':
 
     # Create Consumer instance
     # Hint: try debug='fetch' to generate some log messages
-    c = Consumer(conf, logger=logger)
+    consumer = Consumer(conf, logger=logger)
 
     def print_assignment(consumer, partitions):
         print('Assignment:', partitions)
 
     # Subscribe to topics
-    c.subscribe(topics, on_assign=print_assignment)
+    consumer.subscribe(topics, on_assign=print_assignment)
 
     # Read messages from Kafka, print to stdout
     try:
         while True:
-            msg = c.poll(timeout=1.0)
+            msg = consumer.poll(timeout=1.0)
             if msg is None:
                 continue
             if msg.error():
                 raise KafkaException(msg.error())
-            else:
-                # Proper message
-                sys.stderr.write('%% %s [%d] at offset %d with key %s:\n' %
-                                 (msg.topic(), msg.partition(), msg.offset(),
-                                  str(msg.key())))
-                print(msg.value())
+
+            # Proper message
+            # sys.stderr.write('%% %s [%d] at offset %d with key %s:\n' %
+            #                  (msg.topic(), msg.partition(), msg.offset(),
+            #                   str(msg.key())))
+            # print(msg.value())
+            product_pickle = pickle.loads(msg.value())
+            print(f'{product_pickle=}')
 
     except KeyboardInterrupt:
         sys.stderr.write('%% Aborted by user\n')
 
     finally:
         # Close down consumer to commit final offsets.
-        c.close()
+        consumer.close()
