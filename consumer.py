@@ -111,6 +111,7 @@ if __name__ == '__main__':
             # print(msg.value())
             product_pickle = pickle.loads(msg.value())
             print(f'{type(product_pickle)} {product_pickle=}')
+            print(f'[{product_pickle.id}] {product_pickle.name} {product_pickle.code}')
 
     except KeyboardInterrupt:
         sys.stderr.write('%% Aborted by user\n')
