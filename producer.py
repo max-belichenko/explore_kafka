@@ -86,7 +86,7 @@ if __name__ == '__main__':
     for product in products:
 
         # Pickle product object
-        product_pickle = pickle.dumps(product)
+        product_pickle = pickle.dumps(products)
 
         try:
             producer.produce(topic, product_pickle, callback=delivery_callback)

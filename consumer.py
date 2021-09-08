@@ -27,8 +27,6 @@ import logging
 from confluent_kafka import Consumer, KafkaException
 from pprint import pformat
 
-from schemas import cmdb
-
 
 def stats_cb(stats_json_str):
     stats_json = json.loads(stats_json_str)
