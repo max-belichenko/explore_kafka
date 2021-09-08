@@ -20,8 +20,42 @@
 # Reads lines from stdin and sends to Kafka.
 #
 
-from confluent_kafka import Producer
+import pickle
 import sys
+
+from confluent_kafka import Producer
+
+from schemas import cmdb
+
+
+def generate_cmdb_test_data():
+    NUMBER_OF_IT_SERVICES = 10
+
+    it_services = [
+        cmdb.CMDBItServiceScheme(
+            id=i,
+            name=f'IT Service #{i}',
+            code='CODE',
+            is_active=True,
+        )
+        for i in range(NUMBER_OF_IT_SERVICES)
+    ]
+
+    products = [
+        cmdb.CMDBProductScheme(
+            id=i,
+            name=f'Product #{i}',
+            code='CODE',
+            is_active=True,
+            owner_ad_uid='',
+            owner_email='',
+            it_services=[it_services[i], ]
+        )
+        for i in range(NUMBER_OF_IT_SERVICES)
+    ]
+
+    return products
+
 
 if __name__ == '__main__':
     if len(sys.argv) != 3:
@@ -36,7 +70,7 @@ if __name__ == '__main__':
     conf = {'bootstrap.servers': broker}
 
     # Create Producer instance
-    p = Producer(**conf)
+    producer = Producer(**conf)
 
     # Optional per-message delivery callback (triggered by poll() or flush())
     # when a message has been successfully delivered or permanently
@@ -48,22 +82,24 @@ if __name__ == '__main__':
             sys.stderr.write('%% Message delivered to %s [%d] @ %d\n' %
                              (msg.topic(), msg.partition(), msg.offset()))
 
-    # Read lines from stdin, produce each line to Kafka
-    for line in sys.stdin:
-        try:
-            # Produce line (without newline)
-            p.produce(topic, line.rstrip(), callback=delivery_callback)
+    products = generate_cmdb_test_data()
+    for product in products:
 
+        # Pickle product object
+        product_pickle = pickle.dumps(product)
+
+        try:
+            producer.produce(topic, product_pickle, callback=delivery_callback)
         except BufferError:
             sys.stderr.write('%% Local producer queue is full (%d messages awaiting delivery): try again\n' %
-                             len(p))
+                             len(producer))
 
         # Serve delivery callback queue.
         # NOTE: Since produce() is an asynchronous API this poll() call
         #       will most likely not serve the delivery callback for the
         #       last produce()d message.
-        p.poll(0)
+        producer.poll(0)
 
     # Wait until all messages have been delivered
-    sys.stderr.write('%% Waiting for %d deliveries\n' % len(p))
-    p.flush()
+    sys.stderr.write('%% Waiting for %d deliveries\n' % len(producer))
+    producer.flush()
