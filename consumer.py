@@ -110,7 +110,7 @@ if __name__ == '__main__':
             #                   str(msg.key())))
             # print(msg.value())
             product_pickle = pickle.loads(msg.value())
-            print(f'{product_pickle=}')
+            print(f'{type(product_pickle)} {product_pickle=}')
 
     except KeyboardInterrupt:
         sys.stderr.write('%% Aborted by user\n')
