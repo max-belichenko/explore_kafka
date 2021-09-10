@@ -107,10 +107,8 @@ if __name__ == '__main__':
             #                  (msg.topic(), msg.partition(), msg.offset(),
             #                   str(msg.key())))
             # print(msg.value())
-            products = pickle.loads(msg.value())
-            print(f'{products=}')
-            for product in products:
-                print(f'[{product.id}] {product.name} {product.code}')
+            data = pickle.loads(msg.value())
+            print(f'{data=}')
 
     except KeyboardInterrupt:
         sys.stderr.write('%% Aborted by user\n')

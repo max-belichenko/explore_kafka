@@ -82,11 +82,11 @@ if __name__ == '__main__':
             sys.stderr.write('%% Message delivered to %s [%d] @ %d\n' %
                              (msg.topic(), msg.partition(), msg.offset()))
 
-    products = generate_cmdb_test_data()
-    for product in products:
-
+    # products = generate_cmdb_test_data()
+    # for product in products:
+    for line in sys.stdin:
         # Pickle product object
-        product_pickle = pickle.dumps(products)
+        product_pickle = pickle.dumps(line)
 
         try:
             producer.produce(topic, product_pickle, callback=delivery_callback)
