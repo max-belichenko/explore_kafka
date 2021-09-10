@@ -57,7 +57,7 @@ if __name__ == '__main__':
     conf = {'bootstrap.servers': broker,
             'group.id': group,
             'session.timeout.ms': 6000,
-            'auto.offset.reset': 'earliest'}
+            'auto.offset.reset': 'latest'}
 
     # Check to see if -T option exists
     for opt in optlist:
