@@ -124,6 +124,9 @@ if __name__ == '__main__':
         logger.debug('Subscription assigned')
         logger.debug(f'{type(consumer)} {consumer=}')
         logger.debug(f'{type(partitions)} {partitions=}')
+
+        logger.debug(f'{consumer.assignment()=}')
+        logger.debug(f'{consumer.committed(partitions)=}')
         # get offset tuple from the first partition
         first_offset, last_offset = consumer.get_watermark_offsets(partitions[0])
         logger.debug(f'{first_offset=} {last_offset=}')
@@ -152,6 +155,7 @@ if __name__ == '__main__':
                 #                   str(msg.key())))
                 # print(msg.value())
                 data = pickle.loads(msg.value())
+                print(f'{msg.headers()=}')
                 print(f'{data=}')
 
         except KeyboardInterrupt:
