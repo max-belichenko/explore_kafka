@@ -127,7 +127,7 @@ if __name__ == '__main__':
         # get offset tuple from the first partition
         first_offset, last_offset = consumer.get_watermark_offsets(partitions[0])
         logger.debug(f'{first_offset=} {last_offset=}')
-        current_offset = consumer.position(partitions[0])
+        current_offset = consumer.position(partitions)
         logger.debug(f'{current_offset=}')
         # position [1] being the last index
         partitions[0].offset = last_offset - 1
