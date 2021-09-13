@@ -23,6 +23,7 @@ import sys
 import getopt
 import json
 import logging
+from contextlib import closing
 
 from confluent_kafka import Consumer, KafkaException
 from pprint import pformat
@@ -57,7 +58,8 @@ if __name__ == '__main__':
     conf = {'bootstrap.servers': broker,
             'group.id': group,
             'session.timeout.ms': 6000,
-            'auto.offset.reset': 'latest'}
+            'auto.offset.reset': 'earliest'}
+
 
     # Check to see if -T option exists
     for opt in optlist:
@@ -83,36 +85,73 @@ if __name__ == '__main__':
     handler.setFormatter(logging.Formatter('%(asctime)-15s %(levelname)-8s %(message)s'))
     logger.addHandler(handler)
 
-    # Create Consumer instance
-    # Hint: try debug='fetch' to generate some log messages
-    consumer = Consumer(conf, logger=logger)
+    # # Create Consumer instance
+    # # Hint: try debug='fetch' to generate some log messages
+    # consumer = Consumer(conf, logger=logger)
+    #
+    # def print_assignment(consumer, partitions):
+    #     print('Assignment:', partitions)
+    #
+    # # Subscribe to topics
+    # consumer.subscribe(topics, on_assign=print_assignment)
+    #
+    # # Read messages from Kafka, print to stdout
+    # try:
+    #     while True:
+    #         msg = consumer.poll(timeout=1.0)
+    #         if msg is None:
+    #             continue
+    #         if msg.error():
+    #             raise KafkaException(msg.error())
+    #
+    #         # Proper message
+    #         # sys.stderr.write('%% %s [%d] at offset %d with key %s:\n' %
+    #         #                  (msg.topic(), msg.partition(), msg.offset(),
+    #         #                   str(msg.key())))
+    #         # print(msg.value())
+    #         data = pickle.loads(msg.value())
+    #         print(f'{data=}')
+    #
+    # except KeyboardInterrupt:
+    #     sys.stderr.write('%% Aborted by user\n')
+    #
+    # finally:
+    #     # Close down consumer to commit final offsets.
+    #     consumer.close()
 
-    def print_assignment(consumer, partitions):
-        print('Assignment:', partitions)
 
-    # Subscribe to topics
-    consumer.subscribe(topics, on_assign=print_assignment)
+    def set_offset_to_last_message(consumer, partitions):
+        logger.debug('Subscription assigned')
+        logger.debug(f'{type(consumer)} {consumer=}')
+        logger.debug(f'{type(partitions)} {partitions=}')
+        # get offset tuple from the first partition
+        first_offset, last_offset = consumer.get_watermark_offsets(partitions[0])
+        logger.debug(f'{first_offset=} {last_offset=}')
+        # position [1] being the last index
+        partitions[0].offset = last_offset - 1
+        consumer.assign(partitions)
+        logger.debug('Partitions reassigned')
 
-    # Read messages from Kafka, print to stdout
-    try:
-        while True:
-            msg = consumer.poll(timeout=1.0)
-            if msg is None:
-                continue
-            if msg.error():
-                raise KafkaException(msg.error())
+    with closing(Consumer(conf, logger=logger)) as consumer:
+        # Подписаться на топик
+        consumer.subscribe(topics, on_assign=set_offset_to_last_message)
 
-            # Proper message
-            # sys.stderr.write('%% %s [%d] at offset %d with key %s:\n' %
-            #                  (msg.topic(), msg.partition(), msg.offset(),
-            #                   str(msg.key())))
-            # print(msg.value())
-            data = pickle.loads(msg.value())
-            print(f'{data=}')
+        try:
+            while True:
+                msg = consumer.poll(timeout=1.0)
+                if msg is None:
+                    continue
+                if msg.error():
+                    raise KafkaException(msg.error())
 
-    except KeyboardInterrupt:
-        sys.stderr.write('%% Aborted by user\n')
+                # Proper message
+                # sys.stderr.write('%% %s [%d] at offset %d with key %s:\n' %
+                #                  (msg.topic(), msg.partition(), msg.offset(),
+                #                   str(msg.key())))
+                # print(msg.value())
+                data = pickle.loads(msg.value())
+                print(f'{data=}')
 
-    finally:
-        # Close down consumer to commit final offsets.
-        consumer.close()
+        except KeyboardInterrupt:
+            sys.stderr.write('%% Aborted by user\n')
+
