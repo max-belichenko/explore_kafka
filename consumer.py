@@ -122,11 +122,12 @@ if __name__ == '__main__':
 
     def set_offset_to_last_message(consumer, partitions):
         logger.debug('Subscription assigned')
-        logger.debug(f'{type(consumer)} {consumer=}')
         logger.debug(f'{type(partitions)} {partitions=}')
 
-        logger.debug(f'{consumer.assignment()=}')
-        logger.debug(f'{consumer.committed(partitions)=}')
+        committed = consumer.committed(partitions)
+        committed_offset = committed.get('offset')
+        logger.debug(f'{committed_offset=}')
+
         # get offset tuple from the first partition
         first_offset, last_offset = consumer.get_watermark_offsets(partitions[0])
         logger.debug(f'{first_offset=} {last_offset=}')
