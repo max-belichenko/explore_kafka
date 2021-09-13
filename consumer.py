@@ -120,27 +120,30 @@ if __name__ == '__main__':
     #     consumer.close()
 
 
-    def set_offset_to_last_message(consumer, partitions):
+    def set_offset_to_last_unread_message(consumer, partitions):
         logger.debug('Subscription assigned')
         logger.debug(f'{type(partitions)} {partitions=}')
 
-        committed = consumer.committed(partitions)
-        committed_offset = committed[0].offset
-        logger.debug(f'{committed_offset=}')
+        partitions_committed = consumer.committed(partitions)
+        logger.debug(f'{partitions_committed=}')
 
-        # get offset tuple from the first partition
-        first_offset, last_offset = consumer.get_watermark_offsets(partitions[0])
-        logger.debug(f'{first_offset=} {last_offset=}')
-        current_offset = consumer.position(partitions)
-        logger.debug(f'{current_offset=}')
-        # position [1] being the last index
-        partitions[0].offset = last_offset - 1
-        # consumer.assign(partitions)
+        for i in range(len(partitions)):
+            committed_offset = partitions_committed[i].offset
+            logger.debug(f'{committed_offset=}')
+            first_offset_index, end_offset_index = consumer.get_watermark_offsets(partitions[i])
+            logger.debug(f'{first_offset_index=} {end_offset_index=}')
+            last_offset = end_offset_index - 1
+            logger.debug(f'{last_offset=}')
+            if committed_offset < last_offset:
+                logger.debug(f'Set offset to the last message')
+                partitions[i].offset = last_offset
+
+        consumer.assign(partitions)
         logger.debug('Partitions reassigned')
 
     with closing(Consumer(conf, logger=logger)) as consumer:
         # Подписаться на топик
-        consumer.subscribe(topics, on_assign=set_offset_to_last_message)
+        consumer.subscribe(topics, on_assign=set_offset_to_last_unread_message)
 
         try:
             while True:
