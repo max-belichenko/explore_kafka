@@ -125,7 +125,7 @@ if __name__ == '__main__':
         logger.debug(f'{type(partitions)} {partitions=}')
 
         committed = consumer.committed(partitions)
-        committed_offset = committed.get('offset')
+        committed_offset = committed[0].get('offset')
         logger.debug(f'{committed_offset=}')
 
         # get offset tuple from the first partition
