@@ -129,7 +129,7 @@ if __name__ == '__main__':
         logger.debug(f'{first_offset=} {last_offset=}')
         # position [1] being the last index
         partitions[0].offset = last_offset - 1
-        consumer.assign(partitions)
+        # consumer.assign(partitions)
         logger.debug('Partitions reassigned')
 
     with closing(Consumer(conf, logger=logger)) as consumer:
@@ -155,3 +155,36 @@ if __name__ == '__main__':
         except KeyboardInterrupt:
             sys.stderr.write('%% Aborted by user\n')
 
+
+
+"""
+var consumer = new ConsumerBuilder<Null, string>(config)
+                .SetPartitionsAssignedHandler((c, tps) =>
+                {
+                    var partitionOffsets = c.Committed(tps, TimeSpan.FromSeconds(10));
+                    var watermarkOffsets = tps.Select(tp => c.QueryWatermarkOffsets(tp, TimeSpan.FromSeconds(10)));
+                    var offsets = watermarkOffsets.Zip(partitionOffsets, (watermarkOffset, topicPartitionOffset) =>
+                    {
+                        if (topicPartitionOffset.Offset.IsSpecial || watermarkOffset.High.IsSpecial)
+                        {
+                            return topicPartitionOffset.Offset;
+                        }
+
+                        var lastTopicOffset = watermarkOffset.High - 1;
+                        var lastCommittedOffset = topicPartitionOffset.Offset - 1;
+
+                        if (lastTopicOffset == 0)
+                        {
+                            return new Offset(0);
+                        }
+                        if (lastCommittedOffset == lastTopicOffset)
+                        {
+                            return new Offset(lastCommittedOffset);
+                        }
+                        return new Offset(lastCommittedOffset + 1);
+                    });
+
+                    return tps.Zip(offsets, (partition, offset) => new TopicPartitionOffset(partition, offset));
+                })
+                .Build()
+"""
